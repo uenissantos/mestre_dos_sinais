@@ -1,0 +1,119 @@
+{
+  "project_info": {
+    "project_number": "5966481925",
+    "firebase_url": "https://mestressinais-default-rtdb.firebaseio.com",
+    "project_id": "mestressinais",
+    "storage_bucket": "mestressinais.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5966481925:android:4c664efc3eabee903b6a6c",
+        "android_client_info": {
+          "package_name": "com.example.notificacao"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrQYokxgMWBmSX7_wbJ-yxco5YclixxrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "5966481925-402nai4h0hbfj7ovbq0sadktvj212neb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mestreDosSinais"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5966481925:android:1e13d81aa1557e423b6a6c",
+        "android_client_info": {
+          "package_name": "com.nathan.mestre_dos_sinais"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrQYokxgMWBmSX7_wbJ-yxco5YclixxrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "5966481925-402nai4h0hbfj7ovbq0sadktvj212neb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mestreDosSinais"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:5966481925:android:66e13245d8062fc73b6a6c",
+        "android_client_info": {
+          "package_name": "com.nathan.mestredossinais"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrQYokxgMWBmSX7_wbJ-yxco5YclixxrA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "5966481925-0m5icia853d3jhi3of79hku0etakjpkk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "5966481925-402nai4h0hbfj7ovbq0sadktvj212neb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mestreDosSinais"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
