@@ -34,8 +34,9 @@ class _TelegramMessagesScreenState extends State<TelegramMessagesScreen> {
   }
 
   void _startListening() async {
-    final token = '6104945321:AAFna6eCACI0Ax1eHMQqrMD8Oq5t4MPDD5I'; // Substitua pelo seu token de acesso à API do Telegram
-    final chatId = '<id_do_grupo>'; // Substitua pelo ID do grupo do Telegram que você deseja receber mensagens
+    final token = ''; // Substitua pelo seu token de acesso à API do Telegram
+    final chatId =
+        '<id_do_grupo>'; // Substitua pelo ID do grupo do Telegram que você deseja receber mensagens
 
     final response = await http.get(
       Uri.parse('https://api.telegram.org/bot$token/getUpdates'),
