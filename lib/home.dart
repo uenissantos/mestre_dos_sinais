@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:mestre_dos_sinais/ENVIO/sendHowToUse.dart';
-import 'package:mestre_dos_sinais/ENVIO/sendLiveOn.dart';
-import 'package:mestre_dos_sinais/ENVIO/sendSinais.dart';
-import 'package:mestre_dos_sinais/howToUse.dart';
-import 'package:mestre_dos_sinais/signalHistory.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:mestre_dos_sinais/signal.dart';
+
 import 'package:mestre_dos_sinais/viewMenssageWithWebView.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+
+import 'clock.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -19,31 +20,156 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  AdmobBannerSize? bannerSize;
-  late AdmobInterstitial interstitialAd;
-  late AdmobReward rewardAd;
+  // AdmobBannerSize? bannerSize;
+  // late AdmobInterstitial interstitialAd;
+  // late AdmobReward rewardAd;
+  Future<void> requestNotificationPermission() async {
+    var status = await Permission.notification.request();
+    if (status.isGranted) {
+      // Permissão concedida
+      print('Permissão de notificação concedida');
+    } else {
+      // Permissão negada
+      print('Permissão de notificação negada');
+    }
+  }
+
+  RewardedAd? _rewardedAd;
+
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+  final adUnitIdB = Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/6300978111'
+      : 'ca-app-pub-3940256099942544/2934735716';
+
+  /// Loads a banner ad.
+  void loadAd() {
+    _bannerAd = BannerAd(
+      adUnitId: adUnitIdB,
+      request: const AdRequest(),
+      size: AdSize.mediumRectangle,
+      listener: BannerAdListener(
+        // Chamado quando um anúncio é recebido com sucesso..
+        onAdLoaded: (ad) {
+          debugPrint('$ad loaded.');
+          setState(() {
+            _isLoaded = true;
+          });
+        },
+        // Chamado quando uma solicitação de anúncio falhou.
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('BannerAd failed to load: $err');
+          // Dispose the ad here to free resources.
+          ad.dispose();
+        },
+// Chamado quando um anúncio abre uma sobreposição que cobre a tela.        onAdOpened: (Ad ad) {},
+        onAdClosed: (Ad ad) {},
+        // Chamado quando ocorre uma impressão no anúncio.
+        onAdImpression: (Ad ad) {},
+      ),
+    )..load();
+  }
+
+  final adUnitId =
+      'ca-app-pub-3940256099942544/5224354917'; // Substitua pelo seu ID de bloco de anúncios
+  bool _adLoaded = false;
+  Timer? _timer;
 
   @override
   void initState() {
-    bannerSize = AdmobBannerSize.LARGE_BANNER;
-    interstitialAd = AdmobInterstitial(
-      adUnitId: getInterstitialAdUnitId()!,
-      listener: (AdmobAdEvent event, Map<String, dynamic>? args) {
-        if (event == AdmobAdEvent.closed) interstitialAd.load();
-      },
-    );
-
-    rewardAd = AdmobReward(
-      adUnitId: getRewardBasedVideoAdUnitId()!,
-      listener: (AdmobAdEvent event, Map<String, dynamic>? args) {
-        if (event == AdmobAdEvent.closed) rewardAd.load();
-      },
-    );
-
-    interstitialAd.load();
-    rewardAd.load();
-
     super.initState();
+    loadAd();
+    // Carrega o anúncio premiado
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          setState(() {
+            _rewardedAd = ad;
+            _adLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (error) {
+          print('Falha ao carregar o anúncio: $error');
+        },
+      ),
+    );
+  }
+
+  void showRewardedAd(param) {
+    if (!_adLoaded) {
+      print('O anúncio ainda não foi carregado.');
+      return;
+    }
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {},
+      onAdDismissedFullScreenContent: (ad) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Atenção !'),
+            content: const Text(
+                '  assistir todo o anuncio ajuda a manter a lista funcionando'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Fechar'),
+              ),
+            ],
+          ),
+        );
+        ad.dispose(); // Descarta o anúncio após ser dispensado
+        _loadRewardedAd(); // Carrega o anúncio novamente quando o usuário retornar
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose(); // Descarta o anúncio se falhar em exibir o conteúdo em tela cheia
+        _loadRewardedAd(); // Carrega o anúncio novamente quando o usuário retornar
+      },
+      onAdImpression: (ad) {},
+      onAdClicked: (ad) {},
+    );
+
+    _rewardedAd!.setImmersiveMode(true);
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, rewardItem) {
+        // Lógica para recompensar o usuário por assistir ao anúncio
+
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (BuildContext context) {
+            return param == 'sinais' ? Signal() : ViewMessageWithWebView();
+          }),
+        );
+        print(
+            'Usuário ganhou a recompensa: ${rewardItem.amount} ${rewardItem.type}');
+        _timer = Timer(const Duration(seconds: 5), () {
+          if (_rewardedAd != null && _adLoaded) {
+            _rewardedAd!.dispose();
+            _loadRewardedAd();
+          }
+        });
+      },
+    );
+  }
+
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          setState(() {
+            _rewardedAd = ad;
+            _adLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (error) {
+          print('Falha ao carregar o anúncio: $error');
+        },
+      ),
+    );
   }
 
   void showSnackBar(String content) {
@@ -67,20 +193,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          ' ajude a manter o app ativo',
-          style: TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.coffee),
-          onPressed: () async {
-            if (await rewardAd.isLoaded) {
-              rewardAd.show();
-            } else {
-              showSnackBar('Reward ad is still loading...');
-            }
-          },
+        title: Center(
+          child: const Text(
+            ' Mestre dos sinais',
+            style: TextStyle(
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       body: ListView(
@@ -89,108 +207,56 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Clock(),
-                // Image.asset('assets/spaceman.png'),
-
-                const SizedBox(height: 30),
-
+                const SizedBox(height: 10),
+                Clock(),
+                Image.asset(
+                  'assets/spaceman.png',
+                ),
+                const SizedBox(height: 15),
                 CustomButton(
-                  text: 'Live',
+                  text: 'JOGAR',
                   color: Colors.red,
                   textColor: Colors.white,
-                  onPressed: () {
+                  onPressed: () async {
+/*                     showRewardedAd('jogar');
+ */
+
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (BuildContext context) {
-                        return const ViewMessageWithWebView();
+                        return ViewMessageWithWebView();
                       }),
                     );
                   },
                 ),
                 const SizedBox(height: 10),
                 CustomButton(
-                  text: ' Sinais ',
+                  text: ' SINAIS ',
                   color: Colors.green,
                   textColor: Colors.white,
                   onPressed: () async {
-                    // final isLoaded = await interstitialAd.isLoaded;
-                    // if (isLoaded ?? false) {
-                    //   interstitialAd.show();
-                    // } else {
-                    //   showSnackBar('Interstitial ad is still loading...');
-                    // }
+/*                     showRewardedAd('sinais');
+
+ */
 
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (BuildContext context) {
-                        return const SignalHistory();
+                        return Signal();
                       }),
                     );
                   },
                 ),
                 const SizedBox(height: 10),
-                CustomButton(
-                  text: ' modo de usar ',
-                  color: Colors.green,
-                  textColor: Colors.white,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (BuildContext context) {
-                        return HowToUse();
-                      }),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 50),
-                CustomButton(
-                  text: ' enviar na live ',
-                  color: Colors.green,
-                  textColor: Colors.white,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (BuildContext context) {
-                        return SendLiveOn();
-                      }),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 10),
-                CustomButton(
-                  text: ' enviar sinais',
-                  color: Colors.green,
-                  textColor: Colors.white,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (BuildContext context) {
-                        return SendSinais();
-                      }),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                CustomButton(
-                  text: ' enviar modo  de usar ',
-                  color: Colors.green,
-                  textColor: Colors.white,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (BuildContext context) {
-                        return SendHowToUse();
-                      }),
-                    );
-                  },
-                ),
-                // const SizedBox(height: 10),
-                //       Container(
-                //   margin: EdgeInsets.only(bottom: 20.0, top: 20),
-                //   child: AdmobBanner(
-                //     adUnitId: getBannerAdUnitId()!,
-                //     adSize: bannerSize!,
-                //     listener:
-                //         (AdmobAdEvent event, Map<String, dynamic>? args) {},
-                //     onBannerCreated: (AdmobBannerController controller) {},
-                //   ),
-                // ),
+                if (_bannerAd != null)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SafeArea(
+                      child: SizedBox(
+                        width: _bannerAd!.size.width.toDouble(),
+                        height: _bannerAd!.size.height.toDouble(),
+                        child: AdWidget(ad: _bannerAd!),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 TextButton(
                     onPressed: () {
@@ -206,10 +272,16 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // @override
+  // void dispose() {
+  //   interstitialAd.dispose();
+  //   rewardAd.dispose();
+  //   super.dispose();
+  // }
   @override
   void dispose() {
-    interstitialAd.dispose();
-    rewardAd.dispose();
+    _rewardedAd?.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 }
@@ -256,7 +328,7 @@ class CustomButton extends StatelessWidget {
 //   if (Platform.isIOS) {
 //     return 'ca-app-pub-3940256099942544/2934735716';
 //   } else if (Platform.isAndroid) {
-//     return 'ca-app-pub-1005929281486446/78413559450';
+//     return 'ca-app-pub-1005929281486446/7841355945';
 //   }
 //   return null;
 // }
@@ -265,7 +337,7 @@ class CustomButton extends StatelessWidget {
 //   if (Platform.isIOS) {
 //     return 'ca-app-pub-3940256099942544/4411468910';
 //   } else if (Platform.isAndroid) {
-//     return 'ca-app-pub-1005929281486446/73186117640';
+//     return 'ca-app-pub-1005929281486446/7318611764';
 //   }
 //   return null;
 // }
@@ -274,11 +346,11 @@ class CustomButton extends StatelessWidget {
 //   if (Platform.isIOS) {
 //     return 'ca-app-pub-3940256099942544/1712485313';
 //   } else if (Platform.isAndroid) {
-//     return 'ca-app-pub-1005929281486446/70750691850';
+//     return 'ca-app-pub-1005929281486446/7075069185';
 //   }
 //   return null;
 // }
-
+// ID TESTE
 String? getBannerAdUnitId() {
   if (Platform.isIOS) {
     return 'ca-app-pub-3940256099942544/2934735716';

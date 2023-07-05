@@ -1,13 +1,10 @@
-import 'dart:async';
+import 'dart:io';
 
-import 'package:admob_flutter/admob_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mestre_dos_sinais/clock.dart';
+import 'package:mestre_dos_sinais/signalHistory.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:firebase_database/firebase_database.dart';
-
-import 'home.dart';
-
 
 class ViewMessageWithWebView extends StatefulWidget {
   const ViewMessageWithWebView({Key? key}) : super(key: key);
@@ -17,45 +14,7 @@ class ViewMessageWithWebView extends StatefulWidget {
 }
 
 class _ViewMessageWithWebViewState extends State<ViewMessageWithWebView> {
-  late DatabaseReference _messagesRef;
-  bool _hasnewMessage = false;
-  Timer? _messageTimer;
-  AdmobBannerSize? bannerSize;
-bool clockVisible=true;
-  @override
-  void initState() {
-    super.initState();
-    _messagesRef = FirebaseDatabase.instance.ref().child('liveOn');
-    _messagesRef.onChildAdded.listen((event) {
-      setState(() {
-        _hasnewMessage = true;
-      });
-      _startMessageTimer();
-    });
-
-
- bannerSize = AdmobBannerSize.BANNER;
-
-  }
-
-  void _startMessageTimer() {
-    _messageTimer = Timer(Duration(seconds: 10), () {
-      setState(() {
-        _hasnewMessage = false;
-      });
-    });
-  }
-
-
-  void  visibleClockToWebView (){
-
-
-    setState(() {
-      clockVisible = !clockVisible;
-
-    });
-
-  }
+  // ignore: unused_field
 
   WebViewController controller = WebViewController()
     ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -69,14 +28,16 @@ bool clockVisible=true;
         onPageFinished: (String url) {},
         onWebResourceError: (WebResourceError error) {},
         onNavigationRequest: (NavigationRequest request) {
-          if (request.url.startsWith('https://playpix.com/affiliates/?btag=1160902_l177491')) {
+          if (request.url.startsWith(
+              'https://bet7k.com/casino/1303-live-spaceman?ref=0a450b95e2b4&src=nmcfguhvpuuzhwotdlq&utm_source=84042&source_id=mygroup')) {
             return NavigationDecision.prevent;
           }
           return NavigationDecision.navigate;
         },
       ),
     )
-    ..loadRequest(Uri.parse('https://playpix.com/affiliates/?btag=1160902_l177491'));
+    ..loadRequest(Uri.parse(
+        'https://bet7k.com/casino/1303-live-spaceman?ref=0a450b95e2b4&src=nmcfguhvpuuzhwotdlq&utm_source=84042&source_id=mygroup'));
 
   Widget _buildMessagesList(Map<String, dynamic> messages) {
     final messageList = messages.entries.toList();
@@ -89,7 +50,10 @@ bool clockVisible=true;
       final lastImageUrl = lastMessage['image'];
 
       return ListTile(
-        title: Text(lastText,style: TextStyle(color: Colors.white),),
+        title: Text(
+          lastText,
+          style: TextStyle(color: Colors.white),
+        ),
         leading: lastImageUrl != null ? Image.network(lastImageUrl) : null,
       );
     } else {
@@ -97,109 +61,148 @@ bool clockVisible=true;
     }
   }
 
-  @override
-  void dispose() {
-    _messageTimer?.cancel();
-    super.dispose();
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+  final adUnitIdB = Platform.isAndroid
+      ? 'ca-app-pub-3940256099942544/6300978111'
+      : 'ca-app-pub-3940256099942544/2934735716';
+
+  void loadAd() {
+    _bannerAd = BannerAd(
+      adUnitId: adUnitIdB,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        // Chamado quando um anúncio é recebido com sucesso..
+        onAdLoaded: (ad) {
+          debugPrint('$ad loaded.');
+          setState(() {
+            _isLoaded = true;
+          });
+        },
+        // Chamado quando uma solicitação de anúncio falhou.
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('BannerAd failed to load: $err');
+          // Dispose the ad here to free resources.
+          ad.dispose();
+        },
+// Chamado quando um anúncio abre uma sobreposição que cobre a tela.        onAdOpened: (Ad ad) {},
+        onAdClosed: (Ad ad) {},
+        // Chamado quando ocorre uma impressão no anúncio.
+        onAdImpression: (Ad ad) {},
+      ),
+    )..load();
   }
 
-   Icon? iconClock ;
+  @override
+  void initState() {
+    loadAd();
+    super.initState();
+  }
 
-   changeIconClock(){
+  void visibleClockToWebView() {
+    setState(() {
+      clockVisible = !clockVisible;
+    });
+  }
 
-  iconClock =clockVisible? Icon(Icons.close, weight: 20,color: Colors.red,):Icon(Icons.lock_clock, weight: 20, color: Colors.blue,);
-return iconClock;
-   }
+  void viewList() {
+    setState(() {
+      listVisible
+          ? nameButtonList = 'ver lista'
+          : nameButtonList = 'fechar lista';
 
+      listVisible = !listVisible;
+    });
+  }
 
+  String nameButtonList = 'ver Lista';
+
+  Icon? iconClock;
+
+  changeIconClock() {
+    iconClock = clockVisible
+        ? Icon(
+            Icons.close,
+            weight: 20,
+            color: Colors.red,
+          )
+        : Icon(
+            Icons.lock_clock,
+            weight: 20,
+            color: Colors.white,
+          );
+    return iconClock;
+  }
+
+  bool clockVisible = true;
+  bool listVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-    AppBar(
-          title: Container(
-            width:double.infinity,
-            child:  FittedBox(
-              fit: BoxFit.contain,
-              child: AdmobBanner(
-
-                  adUnitId: getBannerAdUnitId()!,
-                  adSize: bannerSize!,
-                  listener: (AdmobAdEvent event,
-                      Map<String, dynamic>? args) {
-                  },
-                  onBannerCreated:
-                      (AdmobBannerController controller) {
-                    // Dispose is called automatically for you when Flutter removes the banner from the widget tree.
-                    // Normally you don't need to worry about disposing this yourself, it's handled.
-                    // If you need direct access to dispose, this is your guy!
-                    // controller.dispose();
-                  },
-                ),
-            ),
-
+      appBar: AppBar(
+        title: Container(
+          child: Center(
+            child: _bannerAd != null
+                ? Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SafeArea(
+                      child: SizedBox(
+                        width: _bannerAd!.size.width.toDouble(),
+                        height: _bannerAd!.size.height.toDouble(),
+                        child: AdWidget(ad: _bannerAd!),
+                      ),
+                    ),
+                  )
+                : Container(
+                    child: Text('sem anuncios'),
+                  ),
           ),
         ),
-
-
+      ),
       body: Stack(
         children: [
           WebViewWidget(controller: controller),
           Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Visibility(
-              visible: _hasnewMessage,
-              child: Opacity(
-                opacity: 0.8,
-                child: Container(
-                  color: Colors
-                      .blueGrey, // Define a cor de fundo do container da mensagem
-                  padding: EdgeInsets.all(16.0),
-                  child: StreamBuilder(
-                    stream: _messagesRef.onValue,
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData &&
-                          snapshot.data!.snapshot.value != null) {
-                        final dynamic snapshotValue =
-                            snapshot.data!.snapshot.value;
-                        final messages = Map<String, dynamic>.from(
-                            snapshotValue as Map<dynamic, dynamic>);
-                        return _buildMessagesList(messages);
-                      } else {
-                        return Center(child: Text('Live Offline'));
-                      }
-                    },
-                  ),
+              top: 26,
+              right: 16,
+              child: Container(
+                child: Row(
+                  children: [
+                    Visibility(visible: clockVisible, child: Clock()),
+                    IconButton(
+                      onPressed: () {
+                        visibleClockToWebView();
+                      },
+                      icon: changeIconClock(),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        viewList();
+                      },
+                      child: Text(
+                        nameButtonList,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              )),
+          Positioned(
+            top: 56,
+            bottom: 0,
+            left: 0,
+            right: 70,
+            child: Visibility(
+                visible: listVisible,
+                child: Container(
+                    width: double.infinity,
+                    child: SignalHistory(),
+                    color: Colors.white)),
           ),
-
-
-
-  Positioned(
-    top: 26,
-    right: 16,
-    child: Container(
-      child:Row(
-        children: [
-          Visibility(
-              visible: clockVisible,
-              child: Clock()
-
-          ),
-          IconButton(onPressed: (){
-            visibleClockToWebView();
-
-          }, icon:changeIconClock(),
-
-
-          )
-        ],
-      ),)),
-
         ],
       ),
     );
